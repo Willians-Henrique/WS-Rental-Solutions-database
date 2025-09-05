@@ -28,7 +28,7 @@ DB_EXISTS=$(/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_P
 if [ -z "$DB_EXISTS" ]; then
   echo "Banco de dados não existe. Criando..."
   /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -Q "CREATE DATABASE DB_WS_IMOB;"
-  #/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -d DB_WS_IMOB -i /WS-Retail-Solutions-database/scripts/01_create_tables.sql
+  /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -d DB_WS_IMOB -i /scripts-sql/SQLCreate.sql
   #/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -d DB_WS_IMOB -i /WS-Retail-Solutions-database/scripts/02_insert.sql
   #/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -d DB_WS_IMOB -i /WS-Retail-Solutions-database/scripts/03_views.sql
 

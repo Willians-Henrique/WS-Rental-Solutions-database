@@ -17,9 +17,19 @@ CREATE TABLE Users (
     Status VARCHAR(20) DEFAULT 'active',
     MustChangePassword BIT DEFAULT 1,
     CreatedAt DATETIME DEFAULT GETDATE(),
-    CreatedBy VARCHAR(100) NOT NULL,
-    UpdatedAt DATETIME DEFAULT GETDATE(),
-    UpdatedBy VARCHAR(100) NOT NULL
+    CreatedBy VARCHAR(100) NOT NULL
+);
+GO
+
+CREATE TABLE UserLogs (
+    LogId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    UserId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Users(UserId), -- ID do usuário que foi alterado
+    ChangedBy UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Users(UserId), -- ID do usuário que fez a alteração
+    ChangedAt DATETIME DEFAULT GETDATE(), -- Data e hora da alteração
+    ChangeType VARCHAR(50) NOT NULL CHECK (ChangeType IN ('Insert', 'Update', 'Delete')), -- Tipo de alteração
+    ValueChange VARCHAR(50) NOT NULL CHECK (ValueChange IN ('Name', 'CPF', 'RG', 'IssuingAuthority', 'RGIssuingState', 'Email', 'Password', 'MaritalStatus', 'Role', 'Nationality', 'Avatar', 'Status', 'MustChangePassword')), -- Coluna alterada
+    OldValue VARCHAR(MAX), -- Valor antigo
+    NewValue VARCHAR(MAX) -- Valor novo
 );
 GO
 
@@ -79,3 +89,5 @@ CREATE TABLE Emails (
     IsActive BIT DEFAULT 1
 );
 GO
+
+SELECT * FROM Users;
