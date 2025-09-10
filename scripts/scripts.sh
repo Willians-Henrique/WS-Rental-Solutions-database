@@ -5,33 +5,124 @@ if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 fi
 
-# Aguardar o banco de dados estar online
-while ! nc -z db-ws-solutions 1433; do
-    echo "Aguardando o banco de dados estar online..."
-    sleep 1
-done
+# Definir bancos de dados dos microserviços
+declare -a DATABASES=(
+    "DB_AUTH"
+    "DB_PESSOA" 
+    "DB_IMOVEL"
+    "DB_CONTRATO"
+    "DB_FINANCEIRO"
+    "DB_LOGS"
+)
 
-echo "Porta 1433 está aberta. Aguardando SQL Server ficar pronto..."
-sleep 10
+# Definir scripts SQL correspondentes
+declare -A DATABASE_SCRIPTS=(
+    ["DB_AUTH"]="01-auth-schema.sql"
+    ["DB_PESSOA"]="02-pessoa-schema.sql"
+    ["DB_IMOVEL"]="03-imovel-schema.sql"
+    ["DB_CONTRATO"]="04-contrato-schema.sql"
+    ["DB_FINANCEIRO"]="05-financeiro-schema.sql"
+    ["DB_LOGS"]="06-logs-schema.sql"
+)
 
-# Aguardar SQL Server estar completamente pronto
-until /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" > /dev/null 2>&1; do
-    echo "Aguardando SQL Server aceitar conexões..."
-    sleep 2
-done
+# Função para aguardar SQL Server ficar pronto
+wait_for_sqlserver() {
+    echo "Aguardando SQL Server estar online..."
+    
+    # Aguardar porta estar disponível
+    while ! nc -z db-ws-solutions 1433; do
+        echo "Aguardando o banco de dados estar online..."
+        sleep 1
+    done
 
-echo "SQL Server está pronto! Verificando se o banco existe..."
+    echo "Porta 1433 está aberta. Aguardando SQL Server ficar pronto..."
+    sleep 10
 
-# Verificar se o banco existe
-DB_EXISTS=$(/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT name FROM sys.databases WHERE name = 'DB_WS_IMOB'" -h -1 | grep DB_WS_IMOB)
+    # Aguardar SQL Server aceitar conexões
+    until /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" > /dev/null 2>&1; do
+        echo "Aguardando SQL Server aceitar conexões..."
+        sleep 2
+    done
 
-if [ -z "$DB_EXISTS" ]; then
-  echo "Banco de dados não existe. Criando..."
-  /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -Q "CREATE DATABASE DB_WS_IMOB;"
-  /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -d DB_WS_IMOB -i /scripts-sql/SQLCreate.sql
-  #/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -d DB_WS_IMOB -i /WS-Retail-Solutions-database/scripts/02_insert.sql
-  #/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" -d DB_WS_IMOB -i /WS-Retail-Solutions-database/scripts/03_views.sql
+    echo "SQL Server está pronto!"
+}
 
-else
-  echo "Banco de dados já existe. Nenhuma ação necessária."
-fi
+# Função para verificar se banco existe
+database_exists() {
+    local db_name=$1
+    local result=$(/opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" \
+        -Q "SELECT name FROM sys.databases WHERE name = '$db_name'" -h -1 2>/dev/null | grep -w "$db_name")
+    
+    if [ -n "$result" ]; then
+        return 0  # Banco existe
+    else
+        return 1  # Banco não existe
+    fi
+}
+
+# Função para criar banco de dados
+create_database() {
+    local db_name=$1
+    local script_file=$2
+    
+    echo "Criando banco de dados: $db_name"
+    
+    # Criar banco
+    /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" \
+        -Q "CREATE DATABASE [$db_name];" 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Banco $db_name criado com sucesso!"
+        
+        # Executar script de schema se existir
+        if [ -f "/scripts-sql/$script_file" ]; then
+            echo "Executando script de schema: $script_file"
+            /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" \
+                -d "$db_name" -i "/scripts-sql/$script_file" 2>/dev/null
+            
+            if [ $? -eq 0 ]; then
+                echo "✅ Schema do $db_name aplicado com sucesso!"
+            else
+                echo "❌ Erro ao aplicar schema do $db_name"
+            fi
+        else
+            echo "⚠️  Script $script_file não encontrado"
+        fi
+    else
+        echo "❌ Erro ao criar banco $db_name"
+    fi
+}
+
+# Função principal
+main() {
+    echo "🚀 Iniciando configuração dos bancos de dados..."
+    
+    # Aguardar SQL Server
+    wait_for_sqlserver
+    
+    # Verificar e criar cada banco
+    for db_name in "${DATABASES[@]}"; do
+        echo ""
+        echo "📋 Verificando banco: $db_name"
+        
+        if database_exists "$db_name"; then
+            echo "✅ Banco $db_name já existe. Nenhuma ação necessária."
+        else
+            echo "❌ Banco $db_name não existe."
+            script_file="${DATABASE_SCRIPTS[$db_name]}"
+            create_database "$db_name" "$script_file"
+        fi
+    done
+    
+    echo ""
+    echo "🎉 Configuração dos bancos de dados concluída!"
+    
+    # Listar bancos criados
+    echo ""
+    echo "📊 Bancos de dados disponíveis:"
+    /opt/mssql-tools/bin/sqlcmd -S db-ws-solutions -U sa -P "$MSSQL_SA_PASSWORD" \
+        -Q "SELECT name FROM sys.databases WHERE name LIKE 'DB_%'" -h -1 2>/dev/null
+}
+
+# Executar função principal
+main

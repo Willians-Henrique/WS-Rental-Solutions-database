@@ -1,0 +1,62 @@
+USE DB_AUTH;
+GO
+
+CREATE TABLE TB_ROLES(
+    RoleId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    NameRole VARCHAR(100) NOT NULL
+);
+
+-- Tabela de usuários
+CREATE TABLE TB_USERS (
+    UserId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    Name VARCHAR(100) NOT NULL,
+    CPF VARCHAR(11) NOT NULL UNIQUE,
+    RG VARCHAR(20) NOT NULL,
+    IssuingAuthority VARCHAR(50) NOT NULL,
+    RGIssuingState VARCHAR(2) NOT NULL,
+    Email VARCHAR(100) NOT NULL UNIQUE,
+    Password VARCHAR(255) NOT NULL,
+    MaritalStatus VARCHAR(50) NOT NULL CHECK (MaritalStatus IN ('Single', 'Married', 'Divorced', 'Widowed', 'Legally Separated', 'Stable Union')),
+    RoleId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES TB_ROLES(RoleId), 
+    Nationality VARCHAR(50) NOT NULL,
+    Avatar VARCHAR(255),
+    Status VARCHAR(20) DEFAULT 'active',
+    MustChangePassword BIT DEFAULT 1,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CreatedBy VARCHAR(100) DEFAULT 'SYSTEM'
+);
+GO
+
+CREATE TABLE TB_ADDRESSES (
+    AddressId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    UserId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES TB_USERS(UserId), 
+    Street VARCHAR(100) NOT NULL,
+    Number VARCHAR(20) NOT NULL,
+    AdditionalData VARCHAR(255),
+    Neighborhood VARCHAR(100) NOT NULL,
+    City VARCHAR(100) NOT NULL,
+    State VARCHAR(2) NOT NULL,
+    Country VARCHAR(50) NOT NULL,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NULL,
+    IsActive BIT DEFAULT 1
+);
+GO
+
+CREATE TABLE TB_PHONES (
+    PhoneId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    UserId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES TB_USERS(UserId),  
+    Type VARCHAR(20) NOT NULL CHECK (Type IN ('mobile', 'home', 'work')),
+    Number VARCHAR(20) NOT NULL,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NULL,
+    IsActive BIT DEFAULT 1
+);
+GO
+
+INSERT INTO TB_ROLES (RoleId, NameRole) VALUES 
+(DEFAULT, 'Corretor'),
+(DEFAULT, 'Administrativo'),
+(DEFAULT, 'Financeiro'),
+(DEFAULT, 'SuperUsuario');
+GO
