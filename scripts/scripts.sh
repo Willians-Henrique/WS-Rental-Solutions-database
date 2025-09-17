@@ -8,20 +8,20 @@ fi
 # Definir bancos de dados dos microserviços
 declare -a DATABASES=(
     "DB_AUTH"
-    "DB_PESSOA" 
-    "DB_IMOVEL"
-    "DB_CONTRATO"
-    "DB_FINANCEIRO"
+    "DB_PERSON"
+    "DB_PROPERTY"
+    "DB_CONTRACT"
+    "DB_FINANCIAL"
     "DB_LOGS"
 )
 
 # Definir scripts SQL correspondentes
 declare -A DATABASE_SCRIPTS=(
     ["DB_AUTH"]="01-auth-schema.sql"
-    ["DB_PESSOA"]="02-pessoa-schema.sql"
-    ["DB_IMOVEL"]="03-imovel-schema.sql"
-    ["DB_CONTRATO"]="04-contrato-schema.sql"
-    ["DB_FINANCEIRO"]="05-financeiro-schema.sql"
+    ["DB_PERSON"]="02-person-schema.sql"
+    ["DB_PROPERTY"]="03-property-schema.sql"
+    ["DB_CONTRACT"]="04-contract-schema.sql"
+    ["DB_FINANCIAL"]="05-financial-schema.sql"
     ["DB_LOGS"]="06-logs-schema.sql"
 )
 

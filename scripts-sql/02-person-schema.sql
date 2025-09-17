@@ -1,52 +1,55 @@
-USE DB_PESSOA;
+USE DB_PERSON;
 GO
 
 -- Tabela de pessoas
-CREATE TABLE pessoas (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    tipo_pessoa NVARCHAR(20) NOT NULL CHECK (tipo_pessoa IN ('PROPRIETARIO', 'INQUILINO', 'FIADOR', 'TERCEIRO')),
-    nome NVARCHAR(255) NOT NULL,
-    cpf_cnpj NVARCHAR(20) NOT NULL UNIQUE,
-    rg NVARCHAR(20),
-    data_nascimento DATE,
-    estado_civil NVARCHAR(20),
-    profissao NVARCHAR(100),
-    nacionalidade NVARCHAR(50),
-    email NVARCHAR(100),
-    telefone_principal NVARCHAR(20),
-    telefone_secundario NVARCHAR(20),
-    endereco_logradouro NVARCHAR(255),
-    endereco_numero NVARCHAR(10),
-    endereco_complemento NVARCHAR(100),
-    endereco_bairro NVARCHAR(100),
-    endereco_cidade NVARCHAR(100),
-    endereco_estado NVARCHAR(2),
-    endereco_cep NVARCHAR(10),
-    observacoes NVARCHAR(MAX),
-    is_active BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETDATE(),
-    updated_at DATETIME2 DEFAULT GETDATE(),
-    created_by NVARCHAR(50),
-    updated_by NVARCHAR(50)
+CREATE TABLE TB_PERSONS (
+    PersonId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    Name VARCHAR(100) NOT NULL,
+    CPF VARCHAR(11) NOT NULL UNIQUE,
+    RG VARCHAR(20) NOT NULL,
+    IssuingAuthority VARCHAR(50) NOT NULL,
+    RGIssuingState VARCHAR(2) NOT NULL,
+    MaritalStatus VARCHAR(50) NOT NULL CHECK (MaritalStatus IN ('Single', 'Married', 'Divorced', 'Widowed', 'Legally Separated', 'Stable Union')),
+    Profession VARCHAR(100),
+    Nationality VARCHAR(50) NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CreatedBy VARCHAR(100) NOT NULL
 );
+GO
 
--- Tabela de documentos anexados
-CREATE TABLE pessoa_documentos (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    pessoa_id BIGINT NOT NULL,
-    tipo_documento NVARCHAR(50) NOT NULL,
-    nome_arquivo NVARCHAR(255) NOT NULL,
-    caminho_arquivo NVARCHAR(500) NOT NULL,
-    tamanho_arquivo BIGINT,
-    content_type NVARCHAR(100),
-    created_at DATETIME2 DEFAULT GETDATE(),
-    created_by NVARCHAR(50),
-    FOREIGN KEY (pessoa_id) REFERENCES pessoas(id) ON DELETE CASCADE
+CREATE TABLE TB_EMAIL_PERSON (
+    EmailIdPerson UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    PersonId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES TB_PERSONS(PersonId),  
+    EmailAddress VARCHAR(255) NOT NULL,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NULL,
+    IsActive BIT DEFAULT 1
 );
+GO
 
--- Índices para performance
-CREATE INDEX IX_pessoas_tipo_pessoa ON pessoas(tipo_pessoa);
-CREATE INDEX IX_pessoas_cpf_cnpj ON pessoas(cpf_cnpj);
-CREATE INDEX IX_pessoas_nome ON pessoas(nome);
+CREATE TABLE TB_PHONES_PERSON (
+    PhoneIdPerson UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    PersonId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES TB_PERSONS(PersonId),  
+    Type VARCHAR(20) NOT NULL CHECK (Type IN ('mobile', 'home', 'work')),
+    Number VARCHAR(20) NOT NULL,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NULL,
+    IsActive BIT DEFAULT 1
+);
+GO
 
+CREATE TABLE TB_ADDRESSES_PERSON (
+    AddressIdPerson UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    PersonId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES TB_PERSONS(PersonId), 
+    Street VARCHAR(100) NOT NULL,
+    Number VARCHAR(20) NOT NULL,
+    AdditionalData VARCHAR(255),
+    Neighborhood VARCHAR(100) NOT NULL,
+    City VARCHAR(100) NOT NULL,
+    State VARCHAR(2) NOT NULL,
+    Country VARCHAR(50) NOT NULL,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NULL,
+    IsActive BIT DEFAULT 1
+);
 GO
